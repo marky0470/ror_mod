@@ -1,0 +1,1 @@
+local clay = Item.new("Stirring Clay")

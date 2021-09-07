@@ -1,0 +1,155 @@
+for skipping kill remaining enemies
+for _, tele in ipairs(obj.Teleporter:findAll()) do
+				local currentVal = tele:get("active")
+				if currentVal == 2 then
+					tele:set("active", 3)
+				end
+			end
+
+
+
+
+--[[Fireball Sprite lmao
+local fireball
+do
+	local d = 8
+	local surface = Surface.new(d,d)
+	if surface:isValid() then
+		graphics.setTarget(surface)
+
+		graphics.color(Color.ORANGE)
+		graphics.circle(d/2-1,d/2-1,d/2)
+
+		local dynamic = surface:createSprite(r, r)
+    fireball = dynamic:finalize("Fireball")
+  end
+end
+
+local magmaball = Object.new("Magmaball")
+magmaball.sprite(fireball)
+
+magmaball.addCallback("create", function(this)
+	this.speed = 
+	this.direction = 
+end)
+
+magmaball.addCallback("step", function(this)
+
+end)
+
+callback("onHit", function(damager, hit)
+	local parent = damager:getParent()
+	if type(parent) == "PlayerInstance" then
+		magmaball:create(hit.x, hit.y-10)
+	end
+end)
+]]
+
+
+
+old debilitating elite code, i cant let go of it lmao
+callback("onHit", function(damager, hit)
+	local parent = damager:getParent()
+	if not isa(parent, "PlayerInstance") then
+		if --[[enemy is debilitating elite]] then
+			local playerData = player:getData() --table of player's items
+			table.insert(playerData.disabledItems, 300)
+			for i = 0, 5 do
+				if #playerData.items == 0 then
+					break
+				end
+				local index = math.random( #playerData.items )
+				table.insert(playerData.disabledItems, playerData.item[index])
+				--use item removal here
+				table.remove(playerData.items, playerData.items[index])
+			end
+		end
+	end 
+end)
+
+callback("onPlayerStep", function(player)
+	local playerData = player:getData()
+	for i = 1, #playerData.disabledItems, 6 do
+		playerData.disabledItems[i] = playerData.disabledItems[i] - 1
+		if playerData.disabledItems[i] <= 0 then
+			for j = i + 5, i, -1 do
+				local item = playerData.disabledItems[j]
+				player:getItem(item)
+				table.insert(playerData.items, item)
+				table.remove(playerData.disabledItems, item)
+			end
+		end
+		table.remove(playerData.disabledItems, playerData.disabledItems[i])
+	end
+end)
+
+
+--BUBBLE OBJECT
+
+local bubble = Object.new("Bubble")
+
+local enemies = ParentObject.find("enemies")
+
+for _, enemy in ipairs(enemies) do
+	enemy:addCallback("destroy", function(self)
+		bubble:create(self.x,self.y)
+		local _bubble = bubble:findNearest(self.x,self.y)
+		local _bubbleData = _bubble:getData()
+		_bubbleData.oxygen = self:get("maxHp")
+	end)
+end
+
+bubble:addCallback("create", function(self)
+	local selfData = self:getData()
+	selfData.life = math.random(4,6) * 60
+	selfData.size = 
+end)
+
+bubble:addCallback("draw", function(self)
+
+end)
+
+
+
+local artifact = Artifact.new("Depths")
+artifact.unlocked = true
+artifact.loadoutSprite = Sprite.find("SelectArtifact2", vanilla) --Sprite.load("art_danger.png", 2, 18, 18)
+artifact.loadoutText = "Build that boat"
+
+local water = Object.find("Water")
+
+callback("onStageEntry", function()
+
+	for _, water in ipairs(water:findAll()) do
+		water:destroy()
+	end
+
+	local width, height = Stage.getDimensions()
+	water:create(0, height)
+
+end)
+
+callback("onStep", function()
+	local _water = water:find(1)
+	_water.y = _water.y - 0.2
+end)
+
+callback("onPlayerStep", function(player)
+	local _water = water:find(1)
+	if player.y < _water.y then
+		local playerData = player:getData()
+		playerData.breath = playerData.breath - 0.1/60
+	end
+end)
+
+callback("onNPCDeath", function(actor)
+	if not isa(actor, "PlayerInstance") then
+		bubble:create(actor.x,actor.y)
+	end 
+end)
+
+callback("onActorInit", function(actor)
+	if isa(actor, "PlayerInstance") then
+		actor:getData().breath = 1
+	end
+end)
